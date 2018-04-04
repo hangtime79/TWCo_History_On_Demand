@@ -1,0 +1,63 @@
+ALLUSERSPROFILE         C:\ProgramData
+APPDATA                 C:\Users\IBM_ADMIN\AppData\Roaming
+asl.log                 Destination=file
+CLEO                    C:\Program Files\IBM\SPSS\Modeler\18.0
+CLEO_DEMOS              C:\Program Files\IBM\SPSS\Modeler\18.0\Demos
+CommonProgramFiles      C:\Program Files\Common Files
+CommonProgramFiles(x86)
+                        C:\Program Files (x86)\Common Files
+CommonProgramW6432      C:\Program Files\Common Files
+COMMPath                C:\Program Files\Lenovo\Communications Utility
+COMPUTERNAME            ADMINIB-TERDP9O
+ComSpec                 C:\windows\system32\cmd.exe
+EXT_PATH                C:\Program
+                        Files\IBM\SPSS\Modeler\18.0\ext\bin\pasw.rstats\
+FP_NO_HOST_CHECK        NO
+HOME                    C:\Users\IBM_ADMIN\Documents
+HOMEDRIVE               C:
+HOMEPATH                \Users\IBM_ADMIN
+INSTALLFOLDER           C:\Program Files\IBM\SPSS\Modeler\18.0
+INSTALLTYPE             0
+LOCALAPPDATA            C:\Users\IBM_ADMIN\AppData\Local
+LOGONSERVER             \\ADMINIB-TERDP9O
+MODELERDATA             C:\Program Files\IBM\SPSS\Modeler\18.0\data
+MODELERPROFILE          C:\Program Files\IBM\SPSS\Modeler\18.0
+MODELERSERVER           C:\Program Files\IBM\SPSS\Modeler\18.0
+NUMBER_OF_PROCESSORS    8
+OS                      Windows_NT
+PATH                    C:\Program Files\R\R-3.2.5\bin\x64;C:\Program Files\IBM\SPSS\Modeler\18.0\bin;C:\Program Files\IBM\SPSS\Statistics\24;C:\Program Files\IBM\SPSS\Modeler\18.0\jre\bin;C:\RBUILDTOOLS\3.2\BIN;C:\RBUILDTOOLS\3.2\GCC-4.6.3\BIN;C:\PROGRAMDATA\ORACLE\JAVA\JAVAPATH;C:\PYTHON33\;C:\PROGRAM FILES\COMMON FILES\MICROSOFT SHARED\WINDOWS LIVE;C:\PROGRAM FILES (X86)\COMMON FILES\MICROSOFT SHARED\WINDOWS LIVE;C:\DAMOFOROUTLOOK\;C:\IBM\INFORMATIONSERVER\ASBNODE\APPS\JRE\BIN\CLASSIC;C:\IBM\INFORMATIONSERVER\ASBNODE\LIB\CPP;C:\IBM\INFORMATIONSERVER\ASBNODE\APPS\PROXY\CPP\VC60\MT_DLL\BIN;C:\WINDOWS\SYSTEM32;C:\WINDOWS;C:\WINDOWS\SYSTEM32\WBEM;C:\WINDOWS\SYSTEM32\WINDOWSPOWERSHELL\V1.0\;C:\PROGRAM FILES\IBM\INFOPRINT SELECT;C:\PROGRAM FILES (X86)\COMMON FILES\ROXIO SHARED\DLLSHARED\;C:\PROGRAM FILES (X86)\COMMON FILES\ROXIO SHARED\13.0\DLLSHARED";;C:\NOTES\;C:\PROGRAM FILES\INTEL\WIFI\BIN\;C:\PROGRAM FILES\COMMON FILES\INTEL\WIRELESSCOMMON\;C:\PROGRAM FILES (X86)\WINDOWS LIVE\SHARED;C:\PROGRAM FILES\EMEDITOR;C:\PROGRAM FILES\IBM\SPSSOEM\ODBC64V711\DRIVERS;C:\PROGRAM FILES\IBM\SPSS\MODELER\17\EXT\BIN\SPSS.TMWBSERVER\BIN;C:\PROGRAM FILES\IBM\SPSS\MODELER\17\BIN;C:\PROGRAM FILES\IBM\SPSS\MODELER\17\MPICH2\BIN;C:\PROGRAM FILES\IBM\SPSS\MODELER\17\TABI;C:\PROGRAM FILES\IBM\SPSS\MODELER\17.1\EXT\BIN\SPSS.TMWBSERVER\BIN;C:\PROGRAM FILES\IBM\SPSS\MODELER\17.1\BIN;C:\PROGRAM FILES\IBM\SPSS\MODELER\17.1\MPICH2\BIN;C:\PROGRAM FILES\IBM\SPSS\MODELER\17.1\TABI;C:\PROGRAM FILES (X86)\MIKTEX 2.9\MIKTEX\BIN\;C:\ANACONDA2;C:\ANACONDA2\SCRIPTS;C:\ANACONDA2\LIBRARY\BIN;C:\ANACONDA3;C:\ANACONDA3\SCRIPTS;C:\ANACONDA3\LIBRARY\BIN;C:\PROGRAM FILES (X86)\SKYPE\PHONE\;C:\PROGRAM FILES\IBM\SPSS\STATISTICS\24\JRE\BIN;C:\PROGRAM FILES (X86)\PLANTRONICS\SPOKES3G\;C:\Program Files\ThinkPad\Bluetooth Software\;C:\Program Files\ThinkPad\Bluetooth Software\syswow64;C:\Program Files\CloudFoundry;C:\Program Files\IBM\Bluemix\bin;C:\Program Files\nodejs\;C:\Program Files\IBM\SPSS\Modeler\18.0\ext\bin\spss.TMWBServer\bin;C:\Program Files\IBM\SPSS\Modeler\18.0\bin;C:\Program Files\IBM\SPSS\Modeler\18.0\MPICH2\bin;C:\Program Files\IBM\SPSS\Modeler\18.0\TABI;C:\Program Files\IBM\SPSS\Modeler\18.1\ext\bin\spss.TMWBServer\bin;C:\Program Files\IBM\SPSS\Modeler\18.1\bin;C:\Program Files\IBM\SPSS\Modeler\18.1\MPICH2\bin;C:\Program Files\IBM\SPSS\Modeler\18.1\TABI;C:\Program Files\Intel\WiFi\bin\;C:\Program Files\Common Files\Intel\WirelessCommon\;C:\Program Files\GPAC;C:\Users\IBM_ADMIN\AppData\Roaming\npm;C:\Users\IBM_ADMIN\AppData\Local\Box\Box Edit\;C:\Program Files\IBM\SPSS\Modeler\18.0\ext\bin\pasw.common
+PATHEXT                 .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+PD_SOCKET               6874
+PDBASE                  C:\Program Files\IBM\Infoprint Select
+PROCESS_ID              2628
+PROCESSOR_ARCHITECTURE  AMD64
+PROCESSOR_IDENTIFIER    Intel64 Family 6 Model 58 Stepping 9, GenuineIntel
+PROCESSOR_LEVEL         6
+PROCESSOR_REVISION      3a09
+PRODUCTNAME             IBM SPSS Modeler 18.0 Fix Pack 1
+PROFILE_NAME            
+ProgramData             C:\ProgramData
+ProgramFiles            C:\Program Files
+ProgramFiles(x86)       C:\Program Files (x86)
+ProgramW6432            C:\Program Files
+PSModulePath            C:\windows\system32\WindowsPowerShell\v1.0\Modules\
+PUBLIC                  C:\Users\Public
+R_ARCH                  /x64
+R_HOME                  C:/Program Files/R/R-3.2.5
+R_LIBS_USER             C:\Users\IBM_ADMIN\Documents/R/win-library/3.2
+R_USER                  C:\Users\IBM_ADMIN\Documents
+SNA_TEMP_DIR            C:\ProgramData\IBM\SPSS\Modeler
+SystemDrive             C:
+SystemRoot              C:\windows
+TEMP                    C:\Users\IBM_AD~1\AppData\Local\Temp
+TMP                     C:\Users\IBM_AD~1\AppData\Local\Temp
+TMWB17_1_HOME           C:\Program Files\IBM\SPSS\Modeler\17.1\ext\lib\spss.TMWBClient
+TMWB17_HOME             C:\Program Files\IBM\SPSS\Modeler\17\ext\lib\spss.TMWBClient
+TMWB18_1_HOME           C:\Program Files\IBM\SPSS\Modeler\18.1\ext\lib\spss.TMWBClient
+TMWB18_HOME             C:\Program Files\IBM\SPSS\Modeler\18.0\ext\lib\spss.TMWBClient
+TSMPATH                 C:\Program Files\ThinkPad\UltraNav Utility
+ULTRAMON_LANGDIR        C:\Program Files\UltraMon\Resources\en
+USERDOMAIN              ADMINIB-TERDP9O
+USERNAME                gscase
+USERPROFILE             C:\Users\IBM_ADMIN
+windir                  C:\windows

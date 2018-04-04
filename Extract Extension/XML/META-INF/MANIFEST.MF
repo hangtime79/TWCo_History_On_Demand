@@ -1,0 +1,19 @@
+Name: TWCo_History_on_Demand
+Dialog-Specs: TWCo_History_On_Demand.mpe.cfe
+Summary: TWCo History on Demand
+Description: SPSS Modeler Predictive Extension that exposes the Histor
+ ical-Site based TWCo API and return results.    2017-01-29: Forked to
+  ensure correct results by aligning measures datatypes also add comme
+ nts, sections, and headers for easier understanding. Now returning me
+ tadata and allows for different return languages, units, and no longe
+ r do postal codes need to be prefaced with the correct country code. 
+ This is now handled in the extension.    2017-03-19 Added code so tha
+ t users can pass more than 30 days of data.
+Author: Grant Case
+Version: 1.0.0
+Product-Version: 18
+Date: 2017-08-02
+Plugins: R
+R-Packages: mefa,plyr,lubridate,jsonlite,httr,dplyr,urltools
+Links: https://github.com/IBMPredictiveAnalytics/TWCo_Historical_Airpo
+ rt

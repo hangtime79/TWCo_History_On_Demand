@@ -1,0 +1,43 @@
+Above30Day <- check.DF[(check.DF[[check.end]] - check.DF[[check.start]]  > 30)
+                    && (!(is.na(check.DF
+                        , ]
+
+Above30Day <-    check.DF[(!(is.na(check.DF[[check.end]])
+                          | is.na(check.DF[[check.start]])))
+                          & check.DF[[check.end]] - check.DF[[check.start]]  > 30, ]
+
+
+
+y <- seq.Date(Above30Day$StartDate,Above30Day$EndDate,by = "30 day")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                       || 
+                       && check.DF[[check.end]] - check.DF[[check.start]]  > 30
+
+Above30Day <-    check.DF[!(is.na(check.DF[[check.start]]) 
+                       | is.na(check.DF[[check.end]]))
+                       && check.DF[[check.end]] - check.DF[[check.start]]  > 30
+                       , ]
+                       
+                       
+                       
+                       
+                       
+                       
+                       is.na(check.DF[[check.start]]) ||

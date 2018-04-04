@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><!--***********************************************************************--><!----><!--Licensed Materials - Property of IBM--><!----><!--IBM SPSS Products: Modeler Common--><!----><!--(C) Copyright IBM Corp. 1989, 2018--><!----><!--US Government Users Restricted Rights - Use, duplication or disclosure--><!--restricted by GSA ADP Schedule Contract with IBM Corp.--><!----><!--***********************************************************************--><AppExtension debug="false" version="8.0" xmlns="http://xml.spss.com/pasw/extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xml.spss.com/pasw/extension http://xml.spss.com/pasw/extension/AppExtension.xsd">
+  <ExtensionDetails copyright="(c) 2018 SPSS, Inc." description="Application extension for R Module" id="TWCoHistoryOnDemand" label="TWCo_History_On_Demand" provider="IBM SPSS, Inc." providerTag="SPSS"/>
+  <ExtensionName name="extension"/>
+  <Application name="modeler">
+    <AppFeature featureId="TWCoHistoryOnDemand">
+      <InsertUserInterface>
+        <ControlsInsert>
+          <Controls>
+            <ToolbarItem action="previewTable" panel="left" showIcon="true" showLabel="true"/>
+            <ToolbarItem action="helpButton" panel="right" showIcon="true" showLabel="false"/>
+          </Controls>
+        </ControlsInsert>
+      </InsertUserInterface>
+      <AppDetails>
+        <Node descriptionKey="node.DESCRIPTION" id="TWCoHistoryOnDemand" labelKey="node.LABEL" palette="recordOp" scriptName="TWCoHistoryOnDemand" type="process">
+          <AppUserInterface>
+            <Icons>
+              <Icon imagePath="images/TWC_logo_MAIN.gif" type="standardNode"/>
+              <Icon imagePath="images/TWC_logo_MAIN.gif" type="smallNode"/>
+            </Icons>
+          </AppUserInterface>
+        </Node>
+        <Scripting>
+          <Property propertyName="pasw.annotation_autoLabel" reversed="true" scriptName="use_custom_name"/>
+          <Property propertyName="pasw.annotation_Label" scriptName="custom_name"/>
+          <Property propertyName="pasw.annotation_toolTipText" scriptName="tooltip"/>
+          <Property read="false" scriptName="name" write="false"/>
+          <Property propertyName="pasw.annotation_description" scriptName="annotation"/>
+          <Property propertyName="pasw.annotation_keywords" scriptName="keywords"/>
+          <Property read="false" scriptName="cache_enabled" write="false"/>
+          <Property read="false" scriptName="node_type" write="false"/>
+          <Property propertyName="rprocess.syntax" scriptName="syntax"/>
+          <Property propertyName="rprocess.convert_flag" scriptName="convert_flags"/>
+          <Property propertyName="rprocess.convert_missing" scriptName="convert_missing"/>
+          <Property propertyName="rprocess.convert_datetime" scriptName="convert_datetime"/>
+          <Property propertyName="rprocess.convert_datetime_class" scriptName="convert_datetime_class"/>
+        </Scripting>
+      </AppDetails>
+    </AppFeature>
+  </Application>
+</AppExtension>

@@ -1,0 +1,1159 @@
+# **********************************Header*************************************
+# *********GENERAL*********
+# OBJECT NAME: TWCoHistoricalAirport 
+# VERSION: 4.00
+# OBJECT TYPE: R Custom Node
+# CATEGORY: Utility
+# SUBCATEGORY: Weather
+# CREATED BY:   YU WENPEI	
+# DATE:         11/15/2016
+# MODIFIED BY:  GRANT CASE
+# DATE:         01/29/2017
+# DESCRIPTION:
+# C:\Users\IBM_ADMIN\Box Sync\My Work Folder\IBM SPSS Predictive Extensions\TWCo_Historical_Airport\
+# 
+# API Documentation
+# https://docs.google.com/document/d/1HVKgGRdO4nPViF3YFC3e6MVd1nJvoYw202rGzaiOwbc/edit
+# 
+# *********VARIABLES*********
+# NAME	      		TYPE		LOCAL/PASSED	DEFAULT	
+# DESCRIPTION		
+# ---------------------------------------------------------------
+#
+# 
+# 
+# *********DEPENDENCIES*********
+# PACKAGES:
+# httr
+# plyr
+# 
+# 
+# 
+# *********OUTPUT*********
+# 
+# 
+# *********MODIFICATION LOG*********
+# DATE        INITIALS MODIFICATION
+# 11/15/2016  YW
+# Created  
+# 01/07/2017  GSC      
+# Forked to ensure correct results by aligning measures datatypes also
+# add comments, sections, and headers for easier understanding. Now returning
+# metadata and allows for different return languages, units, and no longer
+# do postal codes need to be prefaced with the correct country code. This is
+# now handled in the extension.
+# 
+# *********TODO LOG*********
+# TODO(Grant Case): Add parallelism code
+#
+#
+#
+#
+# *********HEADER CONVENTIONS*********
+# DO NOT GO PAST 80 CHARACTERS
+# TO DEBUG, REPLACE ALL "# DEBUG "
+# TO TURN DEBUG OFF, FIND ALL LINES WITH "  # DB" AND "# DEBUG " AT BEGINNING
+# **********************************Header*************************************
+
+
+# Careful below, this line of code one will completely wipe out the variables 
+# (your SPSS console), will have nothing in it. If you are doing development work and 
+# are creating variables and such, you may have issues when you reload 
+# the .RData file. This line of code will specifically eliminate anything BUT 
+# what's being sent by Modeler. Think of it as a reset. Its commented out with a 
+# RESET tag even though its helpful for Debugging purposes because of what it 
+# does. 
+# http://r.789695.n4.nabble.com/How-to-remove-all-objects-except-a-few-specified-objects-td2335651.html
+
+# RESET rm(list= ls()[!(ls() %in% c('modelerData','modelerDataModel'))]) 
+
+
+# -----------------------------------------------------------------------------
+# -- PACKAGE DECLARATION SECTION
+# -----------------------------------------------------------------------------
+# ********************Create test for package existence************************
+packages <- function(x) {
+  x <- as.character(match.call()[[2]])
+  if (!require(x, character.only=TRUE)) {
+    install.packages(pkgs=x, repos="http://cran.r-project.org")
+    require(x, character.only=TRUE)
+  }
+}
+# ****************************Packages to Use**********************************
+library(httr)
+library(plyr)
+library(dplyr)
+library(lubridate)
+library(urltools)
+library(jsonlite)
+
+
+# DEBUG save.image(file="C:/Users/IBM_ADMIN/Box Sync/My Work Folder/IBM SPSS Predictive Extensions/TWCo_Historical_Airport/Code/Debug/TWCOHistoricalAirport.RData", safe=FALSE) # DB
+# DEBUG print("End Install Package") # DB
+
+
+# -----------------------------------------------------------------------------
+# -- CUSTOM DIALOG VARIABLE DECLARATION SECTION
+# -----------------------------------------------------------------------------
+input_apikey            <- "%%item_apikey%%"
+input_requestType       <- %%item_locationtype%%
+input_countrycode       <- "%%item_countrycode%%"
+input_latitude          <- "%%item_lat%%"
+input_longitude         <- "%%item_lon%%"
+input_postalcode        <- "%%item_postalcode%%"
+input_startDate         <- "%%item_startdate%%"
+input_endDate           <- "%%item_enddate%%" 
+input_units             <- "%%item_unit%%"
+  # e = English units
+  # m = Metric units
+  # h = Hybrid units (UK)
+  # s = Metric SI units (not available for all APIs)
+
+input_date_inputtype    <- %%item_date_group%%
+  # is_variable
+  # is_textinput
+
+
+input_startDate_text    <- "%%item_startdate_input%%"
+input_endDate_text      <- "%%item_enddate_input%%"
+input_countrycode       <- "%%item_countrycode%%"
+input_results_language  <- "%%item_results_language%%"
+
+
+
+
+dialog.option.locationtype    <- input_requestType
+dialog.option.dateinput       <- input_date_inputtype
+
+dialog.column.apikey          <- input_apikey
+dialog.column.units           <- input_units
+dialog.column.countrycode     <- input_countrycode
+
+dialog.column.language        <- input_results_language
+
+# Added for Future Use
+# TODO(Grant Case): Add in Timezone so as to allow the user to switch between 
+# GMT or Local Time when showing date/time
+dialog.column.timezone        <- "GMT" 
+
+
+dialog.column.latitude.name   <- make.names(input_latitude)
+dialog.column.longitude.name  <- make.names(input_longitude)
+dialog.column.postalcode.name <- make.names(input_postalcode)
+dialog.column.startdate.name  <- make.names(input_startDate)
+dialog.column.enddate.name    <- make.names(input_endDate)
+dialog.column.startdate.value <- input_startDate_text
+dialog.column.enddate.value   <- input_endDate_text
+
+
+date.input.type <- dialog.option.dateinput 
+location.type <- dialog.option.locationtype
+# timezone.type <- dialog.column.timezone
+
+
+# -----------------------------------------------------------------------------
+# -- CONSTANT SET SECTION
+# -----------------------------------------------------------------------------
+
+
+kErrorOutputPrefix               <- "TWCoHistoricalAirport Node Error: "
+kDebugImageLocation              <- "C:/Users/IBM_ADMIN/Box Sync/My Work Folder/IBM SPSS Predictive Extensions/TWCo_Historical_Airport/Code/Debug/TWCOHistoricalAirport.RData"
+kDebugImageLocation2             <- "C:/Users/IBM_ADMIN/Box Sync/My Work Folder/IBM SPSS Predictive Extensions/TWCo_Historical_Airport/Code/Debug/modelerDebug.RData"
+kmodDLatitudeColNameConstant     <- "latitude"
+kmodDLongitudeColNameConstant    <- "longitude"
+kmodDPostalCodeColNameConstant   <- "postal.code"
+kmodDStationIDColNameConstant    <- "station.id"
+kmodDStartDateColNameConstant    <- "start.date"
+kmodDEndDateColNameConstant      <- "end.date"
+kmodDLocationURLColNameConstant  <- "location.type"
+kmodDLatCommaLongColNameConstant <- "lat.comma.long"
+kmodDPostalKeyColNameConstant    <- "postal.key"
+kAPIHistorySite                  <- "History-Site"
+kAPILocation                     <- "Location-Point"
+kBaseURLColNameConstant          <- "Base.URL"
+kBaseLocationURLColNameConstant  <- "Location.URL"
+
+
+save.image(file=kDebugImageLocation, safe=FALSE) # DB
+print("End Custom Dialog") # DB
+
+
+
+
+
+
+RetrieveTWCoBaseURL <- function(API.Location, API) {
+  # **********************************Header***********************************
+  # FUNCTION NAME: RetrieveTWCoBaseURL
+  # DESCRIPTION: This function accepts a data frame in the style of
+  # modelerDataModel and will return a data frame will legal R field names that
+  # in theory should match modelerData.
+  #
+  # Args:
+  #   API.Location: (string) Equivalent to whether being searched by lat/long 
+  #   or being searched by postal code.
+  #   API: The actual version of the The Weather Channel API that is being
+  #   called. Depending on the information that needs to be returned.
+  #
+  # Returns:
+  # The base URL that will be updated later on by other functions and script.
+  # 
+  # TODO(Grant Case): Add Current and Forecast URL strings
+  # **********************************Header***********************************
+
+  if (API.Location == "geocode" && API == "History-Site") {
+    BaseURL   <- "https://api.weather.com/v1/geocode/<latitude>/<longitude>/observations/historical.json?language=<language>&units=<units>&apiKey=<api.key>&startDate=<start.date>&endDate=<end.date>"
+
+  } else if (API.Location == "postalcode" && API == "History-Site") {
+    BaseURL   <- "https://api.weather.com/v1/location/<postal.code>:4:<country>/observations/historical.json?language=<language>&units=<units>&apiKey=<api.key>&startDate=<start.date>&endDate=<end.date>"
+
+  } else if (API.Location == "stationid" && API == "History-Site") {
+    BaseURL <- "https://api.weather.com/v1/location/<station.id>:4:<country>/observations/historical.json?language=<language>&units=<units>&apiKey=<api.key>&startDate=<start.date>&endDate=<end.date>" 
+
+  } else if (API.Location == "geocode" && API == "Location-Point") {
+    BaseURL <- "https://api.weather.com/v3/location/point?geocode=<latitudecommalongitude>&language=<language>&format=json&apiKey=<api.key>"
+    
+  } else if (API.Location == "postalcode" && API == "Location-Point") {
+    BaseURL <- "https://api.weather.com/v3/location/point?postalKey=<postal.key>&language=<language>&format=json&apiKey=<api.key>"
+    
+  } else {
+    BaseURL = ""
+  }
+  
+  return(BaseURL)
+} ### END RetrieveTWCoBaseURL
+
+
+
+CreateAppendDFColumnData <- function(column, new.column.name, targetDF, sourceDF) {
+  # **********************************Header***********************************
+  # FUNCTION NAME: CreateAppendDFColumnData
+  # DESCRIPTION: This function seeks to create a data frame or append a 
+  # column to it dataframe based on data sent. 
+  # 
+  #
+  # Args:
+  #   column: a list or data frame column that needs to be part of the data.frame
+  #
+  #   new.column.name: The name to be given to that column when returned in DF
+  #
+  #   targetDF: The data frame where the data can be attached (note this can
+  #   sent without data in the case of a new data frame to be built)
+  #
+  #   sourceDF: If information is being appended from one data frame to another
+  #   the function will take the column, grab it from sourceDF, update the
+  #   the column name and attach it to targetDF
+  #
+  # Returns:
+  #   targetDF: the data frame either created or updated with new the information
+  #   passed to it.     
+  #     
+  # **********************************Header***********************************
+
+  # -----------------------------------------------------------------------------
+  # -- CONSTANT SET SECTION
+  # -----------------------------------------------------------------------------
+
+
+
+  # -----------------------------------------------------------------------------
+  # -- EXECUTE SECTION
+  # -----------------------------------------------------------------------------  
+
+  quotedcolumn = quote(column)
+
+ 
+
+  if (missing(targetDF)) {
+    targetDF <- data.frame(column)
+  } else if (missing(sourceDF)) {
+    targetDF <- data.frame(targetDF, column)
+  } else {
+    targetDF <- data.frame(targetDF, sourceDF[,column])
+  }
+  
+  
+  names(targetDF)[ncol(targetDF)] <- new.column.name
+  return(targetDF)
+
+} ### END CreateAppendDFColumnData
+
+
+
+# DEBUG modelerData  # DB
+# DEBUG print("End Constants and Variables")  # DB
+
+
+# -----------------------------------------------------------------------------
+# -- ERROR HANDLING FUNCTIONS SECTION
+# -----------------------------------------------------------------------------
+# Modeler doesn't appear to handle custom messages, warnings, and conditions,
+# gracefully. For now, we will try to catch them before they occur and print
+# the error in the console log.
+
+# condition <- function(subclass, message, call = sys.call(-1), ...) {
+#   structure(
+#     class = c(subclass, "condition"),
+#     list(message = message, call = call, ...)
+#   )
+# }
+# 
+# # Defines a custom stop function so that issues can be raised to the end user
+# CustomMessageF <- function(subclass, message, call = sys.call(-1), ...) {
+#   kErrorOutputPrefix          <- "TWCoHistoricalAirport Node Error: "
+#   
+#   c <- condition(c(subclass, "message"), message, call = call, ...)
+# 
+# # DEBUG   save.image(file=kDebugImageLocation, safe=FALSE) # DB
+# # DEBUG   print("DEBUG Image Save End") # DB
+# 
+#   paste(kErrorOutputPrefix, c)
+# #  print(c)
+# 
+#   message(c)
+# }
+
+# _____________________________________________________________________________
+
+is.TWCoDate  <- function(check.DF, check.start, check.end, check.historyonly = TRUE) {
+  # **********************************Header***********************************
+  # FUNCTION NAME: is.TWCoDate
+  # DESCRIPTION: This function accepts a data frame and will filter it so as to 
+  # determine what dates are legal dates. If it finds any dates that are not
+  # legal it will print an error in the console log.
+  # 
+  #
+  # Args:
+  #   check.start: Name of the field that is the Start Date
+  #   check.end: Name of the field that is End Date
+  #   check.historyonly: (Boolean: TRUE) - if TRUE will only check for historic 
+  #   dates. For weather forecast dates in the future you would choose FALSE.
+  #
+  # Returns:
+  #   check.DF: Data Frame of only rows with valid dates.
+  # **********************************Header***********************************
+  
+  # -----------------------------------------------------------------------------
+  # -- VARIABLE SET SECTION
+  # -----------------------------------------------------------------------------
+  # Earliest date of The Weather Company's observations - January 1931
+  # Earliest date of The Weather Company's observations - January 1931
+  earliest.date <- ymd(19310101)
+  
+  # If check.historyonly is true it will do the latest day + 1 otherwise + 7 days
+  if (check.historyonly) {
+    latest.date <- today() + 1
+  } else {
+    latest.date <- today() + 7
+  }
+  
+  # Convert Start and End dates to date elements. If they are not legal elements
+  # ymd will return NA
+  check.DF[[check.start]] <- ymd(check.DF[[check.start]])
+  check.DF[[check.end]] <- ymd(check.DF[[check.end]])
+
+  if (sum(is.na(check.DF[[check.start]]) || is.na(check.DF[[check.end]]), na.rm = TRUE) > 0) {
+    print("Data Frame contained rows with a either the Start or End Dates that are not a legal date")
+  }
+  
+  if (sum(check.DF[[check.start]] > check.DF[[check.end]], na.rm = TRUE) > 0) {
+    print("Data Frame contained rows with an input of Start Date must Be the Same or less than End Date")
+  }
+  
+  if (sum(check.DF[[check.start]] < earliest.date || check.DF[[check.end]] < earliest.date, na.rm = TRUE) > 0) {
+    print("Data Frame contained rows with a input of Start or End Date before weather records began (Jan 1931)")
+  }
+  
+  if (sum(check.DF[[check.start]] > latest.date | check.DF[[check.end]] > latest.date, na.rm = TRUE) > 0) {
+    print("Data Frame contained rows with a Future Date, No weather records yet")
+  }
+  
+  check.DF <-    check.DF[!(is.na(check.DF[[check.start]]) 
+                       | is.na(check.DF[[check.end]])
+                       | check.DF[[check.start]] > check.DF[[check.end]]
+                       | check.DF[[check.start]] < earliest.date
+                       | check.DF[[check.end]] < earliest.date
+                       | check.DF[[check.start]] > latest.date
+                       | check.DF[[check.end]] > latest.date)
+                       , ]
+                       
+  return(check.DF)
+} ### END is.TWCoDate
+
+
+
+is.LatitudeLongitude <- function(check.DF, check.latitude, check.longitude) {
+  # **********************************Header***********************************
+  # FUNCTION NAME: is.latitudelongitude
+  # DESCRIPTION: This function accepts a latitude and longitude and will return
+  # whether the values contained are legal latitude and longitudes
+  # 
+  #
+  # Args:
+  #   check.DF: URL Data Frame to be checked
+  #   check.latitude: Latitude column name
+  #   check.longitude: Longitude column name
+  # Returns:
+  #   check.DF: Corrected Data Frame minus any illegal Lat and Longs 
+  #     
+  #     
+  # **********************************Header***********************************
+  
+  # -----------------------------------------------------------------------------
+  # -- CONSTANT SET SECTION
+  # -----------------------------------------------------------------------------
+
+  # Regular Expression patterns for both Latitude and Longitude
+  # slightly modified version found at this link. 
+  # http://stackoverflow.com/questions/3518504/regular-expression-for-matching-latitude-longitude-coordinate  
+  kLatitudePattern  <- "^(\\+|-)?(?:90(?:(?:\\.0{1,9})?)|(?:[0-9]|[1-8][0-9])(?:(?:\\.[0-9]{1,9})?))$"
+  kLongitudePattern <- "^(\\+|-)?(?:180(?:(?:\\.0{1,6})?)|(?:[0-9]|[1-9][0-9]|1[0-7][0-9])(?:(?:\\.[0-9]{1,6})?))$"
+  
+  
+  # -----------------------------------------------------------------------------
+  # -- EXECUTE SECTION
+  # -----------------------------------------------------------------------------  
+  
+  # Check both Latitude and Longitude against the patterns and if both are 
+  # legal Latitude and Longitudes return row otherwise remove
+
+  if (sum(grepl(kLatitudePattern, check.DF[[check.latitude]], perl = TRUE) &
+          grepl(kLongitudePattern, check.DF[[check.longitude]], perl = TRUE)) < nrow(check.DF)){
+    print("Illegal latitude/longitude combinations present and have been removed")
+  }
+
+  
+  check.DF <- check.DF[grepl(kLatitudePattern, check.DF[[check.latitude]], perl = TRUE) &
+                       grepl(kLongitudePattern, check.DF[[check.longitude]], perl = TRUE), ]
+
+  
+  return(check.DF)
+} ### END is.LatitudeLongitude
+
+
+# DEBUG save.image(file=kDebugImageLocation, safe=FALSE) # DB
+# DEBUG print("End Error Handling Functions") # DB
+
+
+
+
+UpdateTWCoURLParameters <- function(update.DF,
+                                    API,
+                                    API.Location,
+                                    URL.col.name,
+                                    language,
+                                    units,
+                                    api.key,
+                                    start.date.col.name,
+                                    end.date.col.name,
+                                    latitude.col.name, #ignored in this function
+                                    longitude.col.name, #ignored in this function
+                                    postal.code.col.name, #ignored in this function
+                                    station.id.col.name, #ignored in this function
+                                    country.code) {
+  # **********************************Header***********************************
+  # FUNCTION NAME: UpdateTWCoURLParameters
+  # DESCRIPTION: This function accepts a data frame and will update all the 
+  # parameters for the URL based on the specification laid out by TWC. For 
+  # consistency, not all columns will be used, but all are requested.
+  #
+  # Args:
+  #   update.DF: The data frame to be processed.
+  #   API: The API currently called.
+  #   API.Location: What type of location is being requested. Latitude/Longitude
+  #   postal code, or station ID.
+  #   URL.col.name: Name of the column that contains the URL string that needs 
+  #   updating
+  #   language: The return language requested by the UI.
+  #   units: The type of units measurements should be returned in: English (US)
+  #   hybrid (UK), metric or metrix - SI units.
+  #   api.key: TWCo API Key sent by the user.
+  #   start.date.col.name: Name of the column with start date.
+  #   end.date.col.name: Name of the column with end date
+  #   latitude.col.name: Name of the column with latitude
+  #   longitude.col.name: Name of the column with longitude
+  #   postal.code.col.name: Name of the column with postal code
+  #   station.id.col.name: Name of the column with Station ID
+  #   country.code: The country code that was populated in the UI if postal code
+  #   is checked.
+  # Returns:
+  #   check.DF: Updated Data Frame 
+  #     
+  # **********************************Header***********************************
+
+
+  # -----------------------------------------------------------------------------
+  # -- UPDATE PARAMETERS SECTION
+  # -----------------------------------------------------------------------------  
+  if (API == "History-Site") {
+    # Note: there is no difference in the parameters between geocode, station,  
+    # and postal code versions of the historical site URL scheme.
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "language", language)
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "units", units)
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "apiKey", api.key)
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "startDate", 
+                                 format(update.DF[[start.date.col.name]], "%Y%m%d"))
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "endDate", 
+                                 format(update.DF[[end.date.col.name]], "%Y%m%d"))
+    
+  } else if (API == "Location-Point" && API.Location == "geocode") {
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "geocode", 
+                                 paste(latitude.col.name, "," , longitude.col.name, sep = ""))
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "language", language)
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "apiKey", api.key)
+
+    
+  } else if (API == "Location-Point" && API.Location == "postalcode")  {
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "postalKey", 
+                                 paste(update.DF[[postal.code.col.name]], ":" , country.code, sep=""))
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "language", language)
+    update.DF[[URL.col.name]] <- param_set(update.DF[[URL.col.name]], "apiKey", api.key)
+    
+  } else {
+    update.DF <- update.DF
+  }
+
+  return(update.DF)
+
+} ### END UpdateTWCoURLParameters
+
+
+
+UpdateSiteHistoryURLPath <- function(update.DF,
+                                     API,
+                                     API.Location,
+                                     URL.col.name,
+                                     language, #ignored in this function
+                                     units, #ignored in this function
+                                     api.key, #ignored in this function
+                                     start.date.col.name, #ignored in this function
+                                     end.date.col.name, #ignored in this function
+                                     latitude.col.name,
+                                     longitude.col.name,
+                                     postal.code.col.name,
+                                     station.id.col.name,
+                                     country.code) {
+  # **********************************Header***********************************
+  # FUNCTION NAME: UpdateSiteHistoryURLPath
+  # DESCRIPTION: This function accepts a data frame and will update the URL
+  # as necessary in order to prepare the URL for Historical Site so that the
+  # path with be correct. This differs from the URL Parameters function as 
+  # URL Tools, HTTR, and other R packages only encapsulate parameter changes,
+  # not path changes. For consistency, not all columns will be used, but all
+  # are requested.
+  #
+  # Args:
+  #   update.DF: The data frame to be processed.
+  #   API: The API currently called.
+  #   API.Location: What type of location is being requested. Latitude/Longitude
+  #   postal code, or station ID.
+  #   URL.col.name: Name of the column that contains the URL string that needs 
+  #   updating
+  #   language: The return language requested by the UI.
+  #   units: The type of units measurements should be returned in: English (US)
+  #   hybrid (UK), metric or metrix - SI units.
+  #   api.key: TWCo API Key sent by the user.
+  #   start.date.col.name: Name of the column with start date.
+  #   end.date.col.name: Name of the column with end date
+  #   latitude.col.name: Name of the column with latitude
+  #   longitude.col.name: Name of the column with longitude
+  #   postal.code.col.name: Name of the column with postal code
+  #   station.id.col.name: Name of the column with Station ID
+  #   country.code: The country code that was populated in the UI if postal code
+  #   is checked.
+  # Returns:
+  #   check.DF: Updated Data Frame 
+  #     
+  # **********************************Header***********************************
+
+  # -----------------------------------------------------------------------------
+  # -- CONSTANT SET SECTION
+  # -----------------------------------------------------------------------------
+
+
+
+  # -----------------------------------------------------------------------------
+  # -- EXECUTE SECTION
+  # -----------------------------------------------------------------------------  
+  Base.URL.Temp <- url_parse(update.DF[[URL.col.name]])
+  
+  if (API == "History-Site" && API.Location == "geocode") {
+    Base.URL.Temp$path <- paste("v1/geocode/", update.DF[[latitude.col.name]], 
+  		       "/", update.DF[[longitude.col.name]], 
+  		       "/observations/historical.json",
+  		       sep="")
+  
+  } else if (location.type == "postalcode") {
+    Base.URL.Temp$path <- paste("v1/location/", 
+  		       update.DF[[postal.code.col.name]], ":4:", 
+  		       country.code, 
+  		       "/observations/historical.json",
+  		       sep="")
+  
+  } else if (location.type == "stationID") {
+    Base.URL.Temp$path <- paste("v1/location/", 
+  		       update.DF[[kmodDStationIDColNameConstant]], 
+  		       ":1:", 
+  		       country.code, 
+  		       "/observations/historical.json", 
+  		       sep="")
+  
+  } else {
+    Base.URL.Temp$path <- Base.URL.Temp$path
+  }
+  
+  update.DF[[URL.col.name]] <- url_compose(Base.URL.Temp)
+
+
+
+  return(update.DF)
+
+} ### END UpdateSiteHistoryURLPath
+
+
+
+
+
+
+
+
+
+
+
+RetrieveTWCoJSON <- function(update.DF,
+                             API,
+                             API.Location,
+                             URL.col.name,
+                             language,
+                             units,
+                             api.key,
+                             start.date.col.name,
+                             end.date.col.name,
+                             latitude.col.name,
+                             longitude.col.name,
+                             postal.code.col.name,
+                             station.id.col.name,
+                             country.code,
+                             tz.type) {
+  # **********************************Header***********************************
+  # FUNCTION NAME: RetrieveTWCoJSON
+  # DESCRIPTION: This function accepts a data frame and based upon a completed
+  # URL contained in the column that is named in the URL.col.name field 
+  
+  
+  # For consistency, not all columns will be used, but all are requested.
+  #
+  # Args:
+  #   update.DF: The data frame to be processed.
+  #   API: The API currently called.
+  #   API.Location: What type of location is being requested. Latitude/Longitude
+  #   postal code, or station ID.
+  #   URL.col.name: Name of the column that contains the URL string that needs 
+  #   updating
+  #   language: The return language requested by the UI.
+  #   units: The type of units measurements should be returned in: English (US)
+  #   hybrid (UK), metric or metrix - SI units.
+  #   api.key: TWCo API Key sent by the user.
+  #   start.date.col.name: Name of the column with start date.
+  #   end.date.col.name: Name of the column with end date
+  #   latitude.col.name: Name of the column with latitude
+  #   longitude.col.name: Name of the column with longitude
+  #   postal.code.col.name: Name of the column with postal code
+  #   station.id.col.name: Name of the column with Station ID
+  #   country.code: The country code that was populated in the UI if postal code
+  #   is checked.
+  # Returns:
+  #   check.DF: Updated Data Frame 
+  #     
+  #     
+  # http://stackoverflow.com/questions/29997325/successfully-coercing-paginated-json-object-to-r-dataframe    
+  # **********************************Header***********************************
+
+  # -----------------------------------------------------------------------------
+  # -- CONSTANT SET SECTION
+  # -----------------------------------------------------------------------------
+  # resultData <- data.frame()
+  Counter.JSONURLs <- NROW(update.DF)
+  
+  # -----------------------------------------------------------------------------
+  # -- EXECUTE SECTION
+  # -----------------------------------------------------------------------------  
+
+  for(i in 1:Counter.JSONURLs) {
+    url <- update.DF[[URL.col.name]][i]
+    
+    Retrieve.Data <- RETRY("GET", url)
+    
+    status.code <- Retrieve.Data$status_code
+    
+    Content.Data <- content(Retrieve.Data, as="text")
+
+    if (status.code != 200){
+      print(paste("Location Data Not Found for: ", url))
+    
+    } else {
+      resultData_new <- as.data.frame(fromJSON(Content.Data , 
+                    simplifyDataFrame = TRUE, simplifyVector = FALSE, 
+                    flatten = TRUE))
+      
+              
+        
+        if (API.Location == "geocode" && API == "History-Site") {
+            latitude.temp      <- update.DF[[latitude.col.name]][i]
+            longitude.temp     <- update.DF[[longitude.col.name]][i]
+            start.date.temp    <- update.DF[[start.date.col.name]][i]
+            end.date.temp      <- update.DF[[end.date.col.name]][i]
+            
+            resultData_new     <- CreateAppendDFColumnData(latitude.temp, 
+                                      latitude.col.name, resultData_new)
+            resultData_new     <- CreateAppendDFColumnData(longitude.temp, 
+                                      longitude.col.name, resultData_new)
+            resultData_new     <- CreateAppendDFColumnData(start.date.temp, 
+                                      start.date.col.name, resultData_new)
+            resultData_new     <- CreateAppendDFColumnData(end.date.temp, 
+                                      end.date.col.name, resultData_new)
+            addcolnum <- 4
+  
+  
+       
+        } else if (API.Location == "postalcode" && API == "History-Site") {
+            postal.code.temp   <- update.DF[[postal.code.col.name]][i]
+            start.date.temp    <- update.DF[[start.date.col.name]][i]
+            end.date.temp      <- update.DF[[end.date.col.name]][i]
+   
+            resultData_new     <- CreateAppendDFColumnData(postal.code.temp, 
+                                      postal.code.col.name, resultData_new)
+            resultData_new     <- CreateAppendDFColumnData(start.date.temp, 
+                                      start.date.col.name, resultData_new)
+            resultData_new     <- CreateAppendDFColumnData(end.date.temp, 
+                                      end.date.col.name, resultData_new) 
+            addcolnum <- 3
+      
+        } else if (API.Location == "stationid" && API == "History-Site") {
+            station.id.temp    <- update.DF[[station.id.col.name]][i]
+            start.date.temp    <- update.DF[[start.date.col.name]][i]
+            end.date.temp      <- update.DF[[end.date.col.name]][i]
+   
+            resultData_new     <- CreateAppendDFColumnData(station.id.temp, 
+                                      station.id.col.name, resultData_new)
+            resultData_new     <- CreateAppendDFColumnData(start.date.temp, 
+                                      start.date.col.name, resultData_new)
+            resultData_new     <- CreateAppendDFColumnData(end.date.temp, 
+                                      end.date.col.name, resultData_new) 
+            addcolnum <- 3
+            
+        } else if (API.Location == "geocode" && API == "Location-Point") {
+            latitude.temp      <- update.DF[[latitude.col.name]][i]
+            longitude.temp     <- update.DF[[longitude.col.name]][i]
+            
+            resultData_new     <- CreateAppendDFColumnData(latitude.temp, 
+                                      latitude.col.name, resultData_new)
+            resultData_new     <- CreateAppendDFColumnData(longitude.temp, 
+                                      longitude.col.name, resultData_new)
+            addcolnum <- 2
+            
+        } else if (API.Location == "postalcode" && API == "Location-Point") {
+            postal.code.temp   <- update.DF[[postal.code.col.name]][i]
+   
+            resultData_new     <- CreateAppendDFColumnData(postal.code.temp, 
+                                      postal.code.col.name, resultData_new)  
+            addcolnum <- 1
+            
+        } else {
+          resultData_new = resultData_new
+        }
+ 
+    colnum <- NCOL(resultData_new)
+    resultData_new <- cbind(resultData_new[, (colnum - addcolnum + 1): colnum],
+                            resultData_new[, 1: (colnum - addcolnum)])
+ 
+    if (exists("resultData")) {
+    
+    resultData <- rbind(resultData, resultData_new)
+    
+    } else {
+    
+    resultData <- resultData_new
+    
+    }
+   
+ 
+    } 
+      
+
+    i <- i + 1
+    colnum    <- NULL
+    addcolnum <- NULL
+  }  
+
+  return(resultData)
+
+} ### END RetrieveTWCoJSON
+
+
+# Code for future function to move time values to Local time from GMT
+#   if (tz.type  == "GMT") {
+#     resultData$metadata.expire_time_gmt <- as_datetime(origin + as.integer(resultData$observations.valid_time_gmt))
+#     resultData$observations.valid_time_gmt <- as_datetime(origin + as.integer(resultData$observations.valid_time_gmt))
+#     resultData$observations.expire_time_gmt <- as_datetime(origin + as.integer(resultData$observations.valid_time_gmt))
+#   } else {
+#     resultData$metadata.expire_time_gmt <- as_datetime(origin + as.integer(resultData$observations.valid_time_gmt))
+#     resultData$observations.valid_time_gmt <- as_datetime(origin + as.integer(resultData$observations.valid_time_gmt))
+#     resultData$observations.expire_time_gmt <- as_datetime(origin + as.integer(resultData$observations.valid_time_gmt))
+#   }
+  
+  
+
+
+
+BuildmodelerDataModel <- function(source.DF, API, API.Location) {
+  # **********************************Header***********************************
+  # FUNCTION NAME: BuildmodelerDataModel
+  # DESCRIPTION: This function accepts 
+  # 
+  # 
+  #
+  # Args:
+  #   check.DF: Data Frame to be checked
+  #   check.x: Latitude column name
+  #   check.y: Longitude column name
+  # Returns:
+  #   check.DF: Updated Data Frame 
+  #     
+  #     
+  # **********************************Header***********************************
+
+  # -----------------------------------------------------------------------------
+  # -- CONSTANT SET SECTION
+  # -----------------------------------------------------------------------------
+
+
+
+  # -----------------------------------------------------------------------------
+  # -- EXECUTE SECTION
+  # -----------------------------------------------------------------------------  
+  check.DF <- data.frame(c(fieldName="dummy", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole=""))
+  names(check.DF)[ncol(check.DF)] <- "dummy"
+  
+  
+    if (API.Location == "geocode" && API == "History-Site") {
+      check.DF$latitude     <- c(fieldName="latitude", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+      check.DF$longitude    <- c(fieldName="longitude", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+      check.DF$start.date   <- c(fieldName="start.date", fieldLabel="", fieldStorage="date", fieldMeasure="", fieldFormat="",   fieldRole="")
+      check.DF$end.date     <- c(fieldName="end.date", fieldLabel="", fieldStorage="date", fieldMeasure="", fieldFormat="",   fieldRole="")
+     
+    } else if (API.Location == "postalcode" && API == "History-Site") {
+      check.DF$postal.code  <- c(fieldName="postal.code", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+      check.DF$start.date   <- c(fieldName="start.date", fieldLabel="", fieldStorage="date", fieldMeasure="", fieldFormat="",   fieldRole="")
+      check.DF$end.date     <- c(fieldName="end.date", fieldLabel="", fieldStorage="date", fieldMeasure="", fieldFormat="",   fieldRole="")
+      
+    } else if (API.Location == "stationid" && API == "History-Site") {
+      check.DF$station.id   <- c(fieldName="station.id", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+      check.DF$start.date   <- c(fieldName="start.date", fieldLabel="", fieldStorage="date", fieldMeasure="", fieldFormat="",   fieldRole="")
+      check.DF$end.date     <- c(fieldName="end.date", fieldLabel="", fieldStorage="date", fieldMeasure="", fieldFormat="",   fieldRole="")
+    
+    } else {
+      check.DF = check.DF
+  }
+  
+  check.DF <- check.DF[2: NCOL(check.DF)]
+  check.DF$metadata.language                      <- c(fieldName="metadata.language", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$metadata.transaction_id                <- c(fieldName="metadata.transaction_id", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$metadata.version                       <- c(fieldName="metadata.version", fieldLabel="", fieldStorage="integer", fieldMeasure="", fieldFormat="",   fieldRole="")
+  
+  
+  if (API.Location == "geocode") {
+    check.DF$metadata.latitude     <- c(fieldName="metadata.latitude", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+    check.DF$metadata.longitude    <- c(fieldName="metadata.longitude", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="") 
+  } else {
+    check.DF$metadata.location_id                   <- c(fieldName="metadata.location_id", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  }
+  
+  
+  
+  check.DF$metadata.units                         <- c(fieldName="metadata.units", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$metadata.expire_time_gmt               <- c(fieldName="metadata.expire_time_gmt", fieldLabel="", fieldStorage="timestamp", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$metadata.status_code                   <- c(fieldName="metadata.status_code", fieldLabel="", fieldStorage="integer", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.key                       <- c(fieldName="observations.key", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.class                     <- c(fieldName="observations.class", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.expire_time_gmt           <- c(fieldName="observations.expire_time_gmt", fieldLabel="", fieldStorage="timestamp", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.obs_id                    <- c(fieldName="observations.obs_id", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.obs_name                  <- c(fieldName="observations.obs_name", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.valid_time_gmt            <- c(fieldName="observations.valid_time_gmt", fieldLabel="", fieldStorage="timestamp", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.day_ind                   <- c(fieldName="observations.day_ind", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.temp                      <- c(fieldName="observations.temp", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.wx_icon                   <- c(fieldName="observations.wx_icon", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.icon_extd                 <- c(fieldName="observations.icon_extd", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.wx_phrase                 <- c(fieldName="observations.wx_phrase", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.pressure_tend             <- c(fieldName="observations.pressure_tend", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.pressure_desc             <- c(fieldName="observations.pressure_desc", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.dewPt                     <- c(fieldName="observations.dewPt", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.heat_index                <- c(fieldName="observations.heat_index", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.rh                        <- c(fieldName="observations.rh", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.pressure                  <- c(fieldName="observations.pressure", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.vis                       <- c(fieldName="observations.vis", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.wc                        <- c(fieldName="observations.wc", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.wdir                      <- c(fieldName="observations.wdir", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.wdir_cardinal             <- c(fieldName="observations.wdir_cardinal", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.gust                      <- c(fieldName="observations.gust", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.wspd                      <- c(fieldName="observations.wspd", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.max_temp                  <- c(fieldName="observations.max_temp", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.min_temp                  <- c(fieldName="observations.min_temp", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.precip_total              <- c(fieldName="observations.precip_total", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.precip_hrly               <- c(fieldName="observations.precip_hrly", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.snow_hrly                 <- c(fieldName="observations.snow_hrly", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.uv_desc                   <- c(fieldName="observations.uv_desc", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.feels_like                <- c(fieldName="observations.feels_like", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.uv_index                  <- c(fieldName="observations.uv_index", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.qualifier                 <- c(fieldName="observations.qualifier", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.qualifier_svrty           <- c(fieldName="observations.qualifier_svrty", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.blunt_phrase              <- c(fieldName="observations.blunt_phrase", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.terse_phrase              <- c(fieldName="observations.terse_phrase", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="",   fieldRole="")
+  check.DF$observations.clds                      <- c(fieldName="observations.clds", fieldLabel="", fieldStorage="string", fieldMeasure="", fieldFormat="", fieldRole="")
+  check.DF$observations.water_temp                <- c(fieldName="observations.water_temp", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="", fieldRole="")
+  check.DF$observations.primary_wave_period       <- c(fieldName="observations.primary_wave_period", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="", fieldRole="")
+  check.DF$observations.primary_wave_height       <- c(fieldName="observations.primary_wave_height", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="", fieldRole="")
+  check.DF$observations.primary_swell_period      <- c(fieldName="observations.primary_swell_period", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="", fieldRole="")
+  check.DF$observations.pprimary_swell_height     <- c(fieldName="observations.primary_swell_height", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="", fieldRole="")
+  check.DF$observations.primary_swell_direction   <- c(fieldName="observations.primary_swell_direction", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="", fieldRole="")
+  check.DF$observations.secondary_swell_period    <- c(fieldName="observations.secondary_swell_period", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="", fieldRole="")
+  check.DF$observations.secondary_swell_height    <- c(fieldName="observations.secondary_swell_height", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="", fieldRole="")
+  check.DF$observations.secondary_swell_direction <- c(fieldName="observations.secondary_swell_direction", fieldLabel="", fieldStorage="real", fieldMeasure="", fieldFormat="", fieldRole="")
+
+  Source.Column.Cnt <- NCOL(source.DF)
+  MDM.Column.Cnt <- NCOL(check.DF)
+  
+  if (Source.Column.Cnt != MDM.Column.Cnt) {
+    print("The total number of columns between the modelerDataModel and modelerData do not match.")
+    print("This import will fail as a result.")
+    print("Compare to see which column(s) are out as a result")
+    
+    T_MD  <- t(head(modelerData,2))
+    T_MDM <- t(head(modelerDataModel,6))
+    print(T_MD)
+    print(T_MDM)
+    # T_MD_MDM <- cbind(T_MDM,T_MD)    
+    
+  }
+
+  return(check.DF)
+
+} ### END BuildmodelerDataModel
+
+
+
+# -----------------------------------------------------------------------------
+# -- modelerData EXECUTION SECTION
+# -----------------------------------------------------------------------------
+# # Retrieve each row from modelerData, run the retrieveDataFromTWC, and 
+# # return the data frame 
+# 
+# # DEBUG save.image(file=kDebugImageLocation, safe=FALSE) # DB
+# # DEBUG print("End modelerData Execution Section") # DB
+# 
+# BuildmodelerDataModel <- function (check.DF) {
+# 
+#   # First check to see if object is truly a data frame.
+#   if(!is.data.frame(check.DF)) {
+#     stop("Invalid data received: not a data.frame")
+#   }
+#   if (dim(check.DF)[1]<=0) {
+#     print("Warning : modelerData has no data, all fieldStorage fields set to strings")
+#     getStorage <- function(x){return("string")}
+#   } else {
+#     getStorage <- function(x) {
+#       x <- unlist(x)
+#       res <- NULL
+#       #if x is a factor, typeof will return 'integer' so we handle this case first
+#       if(is.factor(x)) {
+#         res <- "string"
+#       } 
+#       if(is.Date(x)) {
+#         res <- "timestamp"
+#       } else {
+#         res <- switch(typeof(x), integer="integer", double = "real", "string")
+#       }
+#     return (res)
+#     }
+#   }
+# 
+#   col = vector("list", dim(check.DF)[2])
+# 
+#   for (i in 1:dim(check.DF)[2]) {
+#     col[[i]] <- c(fieldName= names(check.DF[i]) ,fieldLabel = "", fieldStorage=
+#     getStorage(check.DF[i]), fieldMeasure = "", fieldFormat = "", fieldRole = "")
+#   }
+#   
+#   mdm <- do.call(cbind,col)
+#   modelerDataModel <<- data.frame(mdm)
+#   modelerData <<- check.DF
+# }
+
+
+# DEBUG save.image(file=kDebugImageLocation, safe=FALSE) # DB
+print("End Node-Specific Functions") # DB
+
+# -----------------------------------------------------------------------------
+# -- modelerData EXCEPTION HANDLING SECTION
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# -- BUILD URL DATA FRAME
+# -----------------------------------------------------------------------------
+URL.Data <- CreateAppendDFColumnData(RetrieveTWCoBaseURL(location.type,kAPIHistorySite),kBaseURLColNameConstant)
+
+if (location.type == "geocode") {
+  URL.Data <- CreateAppendDFColumnData(dialog.column.latitude.name, 
+                                         kmodDLatitudeColNameConstant, 
+                                         URL.Data, modelerData)
+  URL.Data <- CreateAppendDFColumnData(dialog.column.longitude.name, 
+                                         kmodDLongitudeColNameConstant, 
+                                         URL.Data, modelerData)
+                                                                              
+                                         
+} else if (location.type == "postalcode") {
+  URL.Data <- CreateAppendDFColumnData(dialog.column.postalcode.name, 
+                                        kmodDPostalCodeColNameConstant, 
+                                        URL.Data, modelerData)
+
+  
+                                        
+} else if (location.type == "stationID") {
+  URL.Data <- CreateAppendDFColumnData(dialog.column.postalcode.name, 
+                                         kmodDPostalCodeColNameConstant, 
+                                         URL.Data, modelerData)  
+} else {
+  URL.Data <- URL.Data
+}
+
+if (date.input.type == "is_variable") {
+  URL.Data <- CreateAppendDFColumnData(dialog.column.startdate.name, kmodDStartDateColNameConstant, URL.Data, modelerData)
+  URL.Data <- CreateAppendDFColumnData(dialog.column.enddate.name, kmodDEndDateColNameConstant, URL.Data, modelerData)
+} else if (date.input.type == "is_textinput") {
+  URL.Data <- CreateAppendDFColumnData(dialog.column.startdate.value, kmodDStartDateColNameConstant, URL.Data)
+  URL.Data <- CreateAppendDFColumnData(dialog.column.enddate.value, kmodDEndDateColNameConstant, URL.Data)
+} else {
+  URL.Data <- URL.Data
+}
+
+
+URL.Data <- CreateAppendDFColumnData(RetrieveTWCoBaseURL(location.type,kAPILocation),kBaseLocationURLColNameConstant, URL.Data)
+
+URL.Data <- unique(URL.Data)
+
+
+tryCatch(
+URL.Data <- is.TWCoDate (URL.Data, kmodDStartDateColNameConstant, kmodDEndDateColNameConstant, check.historyonly = TRUE),
+                         Invalid_Date = function(c) paste(kErrorOutputPrefix, "Either the Start or End Dates are not legal"),
+                         Invalid_Start_End = function(c) paste(kErrorOutputPrefix, "Input of Start Date must be the same or less than End Date"),
+                         Invalid_Too_Early = function(c) paste(kErrorOutputPrefix, "Input of Start or End Date before weather records began - Jan 1931"),
+                         Invalid_Future_Date = function(c) paste(kErrorOutputPrefix, "Input of Future Date, No weather records yet")
+)
+
+if (location.type == "geocode") {
+  tryCatch(
+    URL.Data <- is.LatitudeLongitude (URL.Data, kmodDLatitudeColNameConstant, kmodDLongitudeColNameConstant),
+                                     Invalid_Latitude_Longitude = function(c) paste(kErrorOutputPrefix, "Data Frame contained rows with an illegal lattitude or longitude")
+  )
+}
+
+
+
+
+
+# -----------------------------------------------------------------------------
+# -- BUILD BASE URL STRINGS
+# -----------------------------------------------------------------------------
+URL.Data <- UpdateSiteHistoryURLPath (URL.Data,
+                                      kAPIHistorySite,
+                                      location.type,
+                                      kBaseURLColNameConstant,
+                                      dialog.column.language,
+                                      dialog.column.units,
+                                      dialog.column.apikey,
+                                      kmodDStartDateColNameConstant,
+                                      kmodDEndDateColNameConstant,
+                                      kmodDLatitudeColNameConstant,
+                                      kmodDLongitudeColNameConstant,
+                                      kmodDPostalCodeColNameConstant,
+                                      kmodDStationIDColNameConstant,
+                                      dialog.column.countrycode)
+                          
+
+
+URL.Data <- UpdateTWCoURLParameters  (URL.Data,
+                                      kAPIHistorySite,
+                                      location.type,
+                                      kBaseURLColNameConstant,
+                                      dialog.column.language,
+                                      dialog.column.units,
+                                      dialog.column.apikey,
+                                      kmodDStartDateColNameConstant,
+                                      kmodDEndDateColNameConstant,
+                                      kmodDLatitudeColNameConstant,
+                                      kmodDLongitudeColNameConstant,
+                                      kmodDPostalCodeColNameConstant,
+                                      kmodDStationIDColNameConstant,
+                                      dialog.column.countrycode)
+                                    
+URL.Data <- UpdateTWCoURLParameters  (URL.Data,
+                                      kAPILocation,
+                                      location.type,
+                                      kBaseLocationURLColNameConstant,
+                                      dialog.column.language,
+                                      dialog.column.units,
+                                      dialog.column.apikey,
+                                      kmodDStartDateColNameConstant,
+                                      kmodDEndDateColNameConstant,
+                                      kmodDLatitudeColNameConstant,
+                                      kmodDLongitudeColNameConstant,
+                                      kmodDPostalCodeColNameConstant,
+                                      kmodDStationIDColNameConstant,
+                                      dialog.column.countrycode)
+
+
+modelerData_Temp <- RetrieveTWCoJSON (URL.Data,
+                                      kAPIHistorySite,
+                                      location.type,
+                                      kBaseURLColNameConstant,
+                                      dialog.column.language,
+                                      dialog.column.units,
+                                      dialog.column.apikey,
+                                      kmodDStartDateColNameConstant,
+                                      kmodDEndDateColNameConstant,
+                                      kmodDLatitudeColNameConstant,
+                                      kmodDLongitudeColNameConstant,
+                                      kmodDPostalCodeColNameConstant,
+                                      kmodDStationIDColNameConstant,
+                                      dialog.column.countrycode,
+                                      timezone.type)
+
+
+
+
+
+
+
+
+modelerDataModel <- BuildmodelerDataModel(modelerData_Temp, 
+                                          kAPIHistorySite, 
+                                          location.type)
+modelerData <- modelerData_Temp
+
+
+
+save.image(file=kDebugImageLocation, safe=FALSE) # DB
+
+
+# -----------------------------------------------------------------------------
+# -- TESTING SECTION
+# -----------------------------------------------------------------------------
+
+
+
+# -----------------------------------------------------------------------------
+# -- CLEAN UP SECTION
+# -----------------------------------------------------------------------------
+
+
